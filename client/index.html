@@ -1,0 +1,252 @@
+<canvas id="ctx" width="500" height="500" style="border:1px solid #000"></canvas>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+<script>
+    /***EMITTERS***/
+    var socket = io('http://localhost:2000');
+
+    socket.on('news', function (data) {
+        console.log(data);
+    });
+
+    socket.emit('happy', {
+        reason: 'i am programming'
+    });
+
+    function emitClickElementClicked(element, playerNumber){
+        socket.emit('elementClicked', {
+            elementPosition: element.position,
+            elementTicked: element.ticked,
+            elementType: element.type,
+            playerClicked: playerNumber
+        });
+    }
+    /***DRAWINGS***/
+
+    var canvas = document.getElementById("ctx");
+    var ctx = canvas.getContext("2d");
+
+    var setupStage = true;
+
+    //Size of canvas and scale param
+    var canvasWidth = ctx.canvas.clientWidth;
+    var canvasHeight = ctx.canvas.clientHeight;
+    var scale = 4;
+
+    //Grid offset and spacing between elements
+    var offset = 10;
+    var elementSize = canvasHeight / scale;
+    var elementSpacingX = elementSize;
+    var elementSpacingY = elementSize;
+    var gridStroke = elementSize / 24;
+
+
+    //Tic style
+    var ticSpacing = elementSize / 6;
+    var ticStroke = elementSize / 16;
+
+
+    //Tac style
+    var tacSpacing = elementSize / 5;
+    var tacStroke = elementSize / 16;
+
+    //array of fields
+    var elements = [];
+
+    //Player turn
+    var player = 1;
+
+    //adding event on click
+    canvas.addEventListener('click', elementClicked, false);
+
+    function createElement(position, size, type, ticked) {
+        var element = {
+            position: position,
+            size: size,
+            type: type,
+            ticked: ticked
+        };
+        elements.push(element);
+    }
+
+    function drawElement(spacingX, spacingY, element) {
+        element.x = spacingX;
+        element.y = spacingY;
+        if (element.type === 1) {
+            drawField(element.x, element.y);
+        } else if (element.type === 2) {
+            drawCircle(element.x, element.y);
+        }else if (element.type === 3){
+            drawCross(element.x, element.y);
+        }
+    }
+
+    function drawField(x, y) {
+        ctx.beginPath();
+        ctx.lineWidth = gridStroke;
+        ctx.rect(x, y, elementSize, elementSize);
+        ctx.strokeStyle = '#205292';
+        ctx.stroke();
+        ctx.closePath();
+    }
+
+    function drawCircle(x, y) {
+        ctx.beginPath();
+        ctx.lineWidth = ticStroke;
+        ctx.arc(x + elementSize / 2, y + elementSize / 2, (elementSize / 2) - ticSpacing, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#db4437';
+        ctx.stroke();
+
+        drawField(x,  y);
+    }
+
+    function drawCross(x, y) {
+        ctx.beginPath();
+        ctx.lineWidth = ticStroke;
+        ctx.moveTo(x + tacSpacing, y + tacSpacing);
+        ctx.lineTo(x + elementSize - tacSpacing, y + elementSize - tacSpacing);
+        ctx.moveTo(x + tacSpacing, y + elementSize - tacSpacing);
+        ctx.lineTo(x + elementSize - tacSpacing , y + tacSpacing);
+        ctx.strokeStyle = '#0f9d58';
+        ctx.stroke();
+
+        drawField(x,  y);
+    }
+
+    function turnTaken() {
+        if (player === 1){
+            player = 2;
+        }else if (player === 2){
+            player = 1;
+        }
+    }
+
+    function elementClicked(event) {
+        var coordinates = getCursorPosition(canvas, event);
+        for (var i = 0; i < elements.length; i++) {
+            var element = elements[i];
+            if (player === 1) {
+                if (isMouseInsideElement(element, coordinates) && element.type === 1) {
+                    element.ticked = true;
+                    element.type = 2;
+                    emitClickElementClicked(element, player);
+                    turnTaken();
+                    break;
+                } else if (isMouseInsideElement(element, coordinates) && element.type === 2) {
+                    element.ticked = false;
+                    element.type = 1;
+                    break;
+                } else {
+                    console.log("ERROR! no element clicked")
+                }
+            }else if (player === 2){
+                if (isMouseInsideElement(element, coordinates) && element.type === 1) {
+                    element.ticked = true;
+                    element.type = 3;
+                    emitClickElementClicked(element, player);
+                    turnTaken();
+                    break;
+                } else if (isMouseInsideElement(element, coordinates) && element.type === 3) {
+                    element.ticked = false;
+                    element.type = 1;
+                    console.log("cross away away!!!");
+                    break;
+                } else {
+                    console.log("ERROR! no element clicked")
+                }
+            }
+        }
+    }
+
+    function isMouseInsideElement(element, mouseCoordinates) {
+        var minimumHorizontal = element.x;
+        var maximumHorizontal = element.x + elementSpacingX;
+        var minimumVertical = element.y;
+        var maximumVertical = element.y + elementSpacingY;
+
+        var insideLeftBorder = false;
+        var insideRightBorder = false;
+        var insideTopBorder = false;
+        var insideBottomBorder = false;
+
+        if (minimumHorizontal < mouseCoordinates.x) {
+            insideLeftBorder = true;
+        }
+        if (maximumHorizontal > mouseCoordinates.x) {
+            insideRightBorder = true;
+        }
+        if (minimumVertical < mouseCoordinates.y) {
+            insideTopBorder = true;
+        }
+        if (maximumVertical > mouseCoordinates.y) {
+            insideBottomBorder = true;
+        }
+
+        return insideLeftBorder && insideRightBorder && insideTopBorder && insideBottomBorder;
+    }
+
+    function getCursorPosition(canvas, event) {
+        var positionXY = {};
+        var rect = canvas.getBoundingClientRect();
+        var x = event.clientX - rect.left;
+        var y = event.clientY - rect.top;
+        positionXY.x = x;
+        positionXY.y = y;
+        return positionXY;
+    }
+
+    function setupTicTacToe() {
+        if (setupStage) {
+            for (var i = 0; i < 9; i++) {
+                createElement(i, elementSize, 1, false);
+            }
+            setupStage = false;
+            console.log("Setup done");
+        } else {
+            //only do this once
+        }
+    }
+
+    function drawGrid() {
+        var position = 0;
+        var spacingX = offset;
+        var spacingY = offset;
+        for (var columns = 0; columns < 3; columns++) {
+            for (var rows = 0; rows < 3; rows++) {
+                element = elements[position];
+                drawElement(spacingX, spacingY, element);
+                spacingY += elementSpacingY;
+                position++;
+            }
+            spacingX += elementSpacingX;
+            spacingY = offset;
+        }
+        spacingX = elementSpacingX;
+    }
+
+    //Draws to canvas at a given interval
+    function update() {
+        console.log("updating...");
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        setupTicTacToe();
+        drawGrid();
+    }
+
+    //Sets interval for drawing to canvas
+    setInterval(update, 1000);
+
+    /*************GENERAL DOCUMENTATION*************/
+
+    /**
+     //1 Modify settings =
+     ctx.font = '30px Arial'; //font
+     ctx.fillStyle = 'red'; //color of text and forms
+     ctx.globalAlpha = 0.5; //Transparency 0 = invis, 1 = visible
+
+     //2 Draw something ()
+     ctx.fillText('Hello', 50,50); //Write text
+     ctx.fillRect(50,50,100,100); // draw rect
+     ctx.clearRect(75,75,100,100); //Delete part of rect.
+     */
+
+</script>
