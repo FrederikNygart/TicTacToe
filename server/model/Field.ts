@@ -6,7 +6,8 @@ class Field{
     private _ticked: boolean;
     private _value: number;
     private _position: number;
-    constructor(position){
+    
+    constructor(position: number){
         this._position = position;
     }
 

@@ -1,7 +1,4 @@
 "use strict";
-/**
- * Created by frederik on 1/22/2017.
- */
 var Field = (function () {
     function Field(position) {
         this._position = position;

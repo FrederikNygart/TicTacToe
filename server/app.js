@@ -44,6 +44,7 @@ io.on('connection', function (socket) {
     socket.on('happy', function (data) {
         console.log("happy because " + data.reason);
     });
+    updateModel();
 });
 
 server.listen(port, function (_) {
@@ -63,15 +64,28 @@ var g = require("./model/Game");
 const game = new g.Game(3, 3);
 
 function updateModel() {
-    for (var socket in SOCKET_LIST){
+    for (var i in SOCKET_LIST) {
+        var socket = SOCKET_LIST[i];
         socket.on('elementClicked', function (data) {
-
-        })
+            console.log("element clicked at: " + data.elementPosition);
+            game.turn(data.playerNumber, data.elementPosition);
+            sendState(data.playerNumber, data.elementPosition);
+        });
     }
 }
-function onTurnTaken() {
-    updateModel();
+function sendState(playerNumber, elementPosition) {
+    for (var i in SOCKET_LIST) {
+        var socket = SOCKET_LIST[i];
+        console.log("sending value: " + game.getField(elementPosition).value);
+        socket.emit('modelUpdated', {
+            gameOver: game.gameOver,
+            elementPosition: elementPosition,
+            elementType: game.getField(elementPosition).value,
+            playerNumber: playerNumber
+        });
+    }
 }
+
 
 
 

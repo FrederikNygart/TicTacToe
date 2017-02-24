@@ -7,16 +7,16 @@ class Player {
     private _hasTurn: boolean = false;
     private _score: number;
     private _position: number;
+    private _fieldValue: number;
 
     constructor(position:number) {
         this._position = position;
+        this._fieldValue = position + 1;
     }
 
     ticField(field: Field) {
-        if (this.hasTurn) {
-            field.ticked = true;
-            field.value = this._position;
-        }
+        field.ticked = true;
+        field.value = this._fieldValue;
     }
 
     takeTurn(field: Field){
@@ -42,6 +42,13 @@ class Player {
 
     get position(): number {
         return this._position;
+    }
+     get fieldValue(): number {
+        return this._fieldValue;
+    }
+
+    set fieldValue(value: number) {
+        this._fieldValue = value;
     }
 }
 

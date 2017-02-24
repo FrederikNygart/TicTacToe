@@ -1,17 +1,13 @@
 "use strict";
-/**
- * Created by frederik on 1/22/2017.
- */
 var Player = (function () {
     function Player(position) {
         this._hasTurn = false;
         this._position = position;
+        this._fieldValue = position + 1;
     }
     Player.prototype.ticField = function (field) {
-        if (this.hasTurn) {
-            field.ticked = true;
-            field.value = this._position;
-        }
+        field.ticked = true;
+        field.value = this._fieldValue;
     };
     Player.prototype.takeTurn = function (field) {
         this.ticField(field);
@@ -40,6 +36,16 @@ var Player = (function () {
     Object.defineProperty(Player.prototype, "position", {
         get: function () {
             return this._position;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Player.prototype, "fieldValue", {
+        get: function () {
+            return this._fieldValue;
+        },
+        set: function (value) {
+            this._fieldValue = value;
         },
         enumerable: true,
         configurable: true
